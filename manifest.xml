@@ -1,14 +1,18 @@
 <gistAutoUpdate info="this is a manifest for Autoupdating VBA code distribution">
     <manifest description="Update manifest and associated classes and modules" contact="ngocdd@sfdp.net">
         <gists>			
-		<item1 gistid="3414216" version="1" filename="" module="" type="version" />
-		<item2 gistid="3414216" version="" filename="mdl_Global.bas" module="mdl_Global" type="module" />
-		<item3 gistid="3414216" version="" filename="mdl_App.bas" module="mdl_App" type="module" />
-		<item4 gistid="3414216" version="" filename="mdl_Functions.bas" module="mdl_Functions" type="module" />
-		<item5 gistid="3414216" version="" filename="mdl_Const.bas" module="mdl_Const" type="module" />
-		<item6 gistid="3414216" version="" filename="mdl_Main.bas" module="mdl_Main" type="module" />
-		<item7 gistid="3414216" version="" filename="mdl_Mis.bas" module="mdl_Mis" type="module" />
-		<item8 gistid="3414216" version="" filename="mdl_Style.bas" module="mdl_Style" type="module" />
+		<item1 gistid="3414216" version="1" required="x" filename="" module="" type="version" />
+		<item2 gistid="3414216" version="" required="x" filename="mdl_API.bas" module="mdl_API.bas" type="module" />
+		<item3 gistid="3414216" version="" required="x" filename="mdl_App.bas" module="mdl_App.bas" type="module" />		
+		<item4 gistid="3414216" version="" required="x" filename="mdl_Main.bas" module="mdl_Main" type="module" />
+		<item5 gistid="3414216" version="" required="x" filename="mdl_WB.bas" module="mdl_WB" type="module" />
+		<item6 gistid="3414216" version="" required="x" filename="mdlConst.bas" module="mdlConst" type="module" />
+		<item7 gistid="3414216" version="" required="x" filename="mdlConvert.bas" module="mdlConvert" type="module" />		
+		<item8 gistid="3414216" version="" required="x" filename="mdlFunctions.bas" module="mdlFunctions" type="module" />
+		<item9 gistid="3414216" version="" required="x" filename="mdlNotes.bas" module="mdlNotes" type="module" />
+		<item10 gistid="3414216" version="" required="x" filename="mdlResources.bas" module="mdlResources" type="module" />
+		<item11 gistid="3414216" version="" required="x" filename="mdlSheetBehavior.bas" module="mdlSheetBehavior" type="module" />
+		<item12 gistid="3414216" version="" required="x" filename="mdlStyle.bas" module="mdlStyle" type="module" />
         </gists>
     </manifest>
 </gistAutoUpdate>
