@@ -3,9 +3,9 @@ Option Explicit
 ' Import
 #If VBA7 Then
     Private Declare PtrSafe Function GetCurrentThreadId Lib "kernel32" () As LongPtr
-    Private Declare PtrSafe Function SetDlgItemText Lib "USER32" Alias "SetDlgItemTextW" (ByVal hDlg As LongPtr, ByVal nIDDlgItem As LongPtr, ByVal lpString As String) As LongPtr
-    Private Declare PtrSafe Function SetWindowsHookEx Lib "USER32" Alias "SetWindowsHookExA" (ByVal idHook As LongPtr, ByVal lpfn As LongPtr, ByVal hmod As LongPtr, ByVal dwThreadId As LongPtr) As LongPtr
-    Private Declare PtrSafe Function UnhookWindowsHookEx Lib "USER32" (ByVal hHook As LongPtr) As LongPtr
+    Private Declare PtrSafe Function SetDlgItemText Lib "user32" Alias "SetDlgItemTextW" (ByVal hDlg As LongPtr, ByVal nIDDlgItem As LongPtr, ByVal lpString As String) As LongPtr
+    Private Declare PtrSafe Function SetWindowsHookEx Lib "user32" Alias "SetWindowsHookExA" (ByVal idHook As LongPtr, ByVal lpfn As LongPtr, ByVal hmod As LongPtr, ByVal dwThreadId As LongPtr) As LongPtr
+    Private Declare PtrSafe Function UnhookWindowsHookEx Lib "user32" (ByVal hHook As LongPtr) As LongPtr
 #Else
     Private Declare Function GetCurrentThreadId Lib "kernel32" () As Long
     Private Declare Function SetDlgItemText Lib "user32" Alias "SetDlgItemTextW" (ByVal hDlg As Long, ByVal nIDDlgItem As Long, ByVal lpString As String) As Long
@@ -39,9 +39,6 @@ Private StrOK As String
 Private StrCancel As String
 
 Global Const VnDate = "dd/mm/yyyy"
-
-' Application title
-Private Const xApp_Title = "SEDP Manager"
 
 Function MsgBox(MessageTxt As String, Optional msgStyle As VbMsgBoxStyle) As VbMsgBoxResult
     Beep
@@ -132,12 +129,12 @@ Function InputDate(iDateStr As Variant) As Date
     ' input shall be converted back to serial date
     Dim iStr As String, iSpliter As Variant
     
-    On Error GoTo ErrHandler
+    On Error GoTo errHandler
     iSpliter = Split(iDateStr, "/")
-    If UBound(iSpliter) < 2 Then GoTo ErrHandler
+    If UBound(iSpliter) < 2 Then GoTo errHandler
     ' Now we have to see what locale we are now at
     InputDate = DateSerial(iSpliter(2), iSpliter(0), iSpliter(1))
-ErrHandler:
+errHandler:
 End Function
 
 '===================================================
@@ -204,9 +201,9 @@ Private Sub SetCaption(MyObj As Object, iCaption As String, Optional ControlTipS
 End Sub
 
 Private Function GetCaption(Obj As Object) As String
-    On Error GoTo ErrHandler
+    On Error GoTo errHandler
     GetCaption = Obj.Caption
-ErrHandler:
+errHandler:
 End Function
 
 Sub ToggleFilterKey()
