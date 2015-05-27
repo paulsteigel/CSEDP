@@ -25,6 +25,7 @@ Dim OldSheet As Boolean
 Private CachedListDistinct As Collection
 Private ColListing() As New Collection
 Private CurrentPointer As Long
+Private OldTableName As String
 
 Sub Back2Main()
     ' For returning to Main Screen
@@ -89,7 +90,6 @@ Function CreateWordDocument(retApp As Object) As Object
 End Function
 
 Sub GenerateSEDP()
-Attribute GenerateSEDP.VB_ProcData.VB_Invoke_Func = " \n14"
     RegisterAction
     Application.StatusBar = ""
     ' First - convert all to Unicode
@@ -106,7 +106,8 @@ Attribute GenerateSEDP.VB_ProcData.VB_Invoke_Func = " \n14"
     
     'reset some collections
     Set CachedListDistinct = Nothing
-
+    ReDim ColListing(0)
+    
     Dim myWordDoc As Object, LocalSetting As String
     LocalSetting = ","
     If InStr(Format("12345", "#,##0"), ",") > 0 Then LocalSetting = "."
@@ -114,14 +115,14 @@ Attribute GenerateSEDP.VB_ProcData.VB_Invoke_Func = " \n14"
     Dim myWordApp As Object
     Set myWordDoc = CreateWordDocument(myWordApp)
     
-    Dim i As Long, ContractDoc As String, HasWordError As Boolean
+    Dim i As Long, ContractDoc As String, HasWordError As Boolean, IntegrationSetting As Boolean
     Dim MyRange As Range
-    myWordApp.Visible = True
+    myWordApp.Visible = False
     Set MyRange = Range("SEDP_OUTLINE")
     
     ' now generate all style
     HasWordError = GenerateWordStyle(myWordDoc, myWordApp)
-    If HasWordError Then GoTo ErrHandler
+    If HasWordError Then GoTo errHandler
     Dim j, k, L, x As Long, xCounter As Long, prCount As Long
     
     Dim FilterStr As String, FilterArr As Variant, StructStr As String, AllRowCount As Long
@@ -145,6 +146,7 @@ Attribute GenerateSEDP.VB_ProcData.VB_Invoke_Func = " \n14"
     ' Prepare all Sheets for printing out
     ApplySheetFilter
     
+    IntegrationSetting = Range("CONF_INTEGRATE")
     With myWordDoc
         i = 2
         AllRowCount = MyRange.Rows.Count
@@ -224,6 +226,8 @@ xProcess:               ' Get data on the fly
                 ' get back one row
                 i = i - 1
             Else
+                ' check for intgration
+                If Not IntegrationSetting And MyRange.Cells(i, 3) = "x" Then GoTo SKIP_INTEGRATION
                 With tmpObj
                     .ItemHeading = MyRange.Cells(i, 5)
                     .ItemDetails = MyRange.Cells(i, 2)
@@ -246,7 +250,8 @@ xProcess:               ' Get data on the fly
                         Next
                         InsertPara myWordDoc, tmpObj, StructStr, True
                     Else
-                    
+                        ' Just sometinh else
+                        Debug.Print "xx"
                     End If
                 ElseIf StructStr = "REPEAT" Then
                     ' okie they need to repead this stuff..
@@ -280,11 +285,16 @@ xProcess:               ' Get data on the fly
                             i = i + 1
                         Wend
                     Next
+                    'get back i a step
+                    'reset this variable
+                    CurrentPointer = 0
+                    i = i - 1
                 Else
                     ' Just insert the normal text
                     InsertPara myWordDoc, tmpObj, MyRange.Cells(i, 1)
                 End If
             End If
+SKIP_INTEGRATION:
             i = i + 1
             Application.StatusBar = MsgPasstoWord & " " & Format((i - 2) * 100 / AllRowCount, "##0") & "% " & MsgFinished
         Wend
@@ -292,11 +302,11 @@ xProcess:               ' Get data on the fly
     End With
 
     ' get out and close
-    SaveFile ThisWorkbook.Path & "\" & Range("SEDP_Name") & Format(Now(), "HHMM_DDMMYYYY") & ".doc", myWordDoc
+    'SaveFile ThisWorkbook.Path & "\" & Range("SEDP_Name") & Format(Now(), "HHMM_DDMMYYYY") & ".doc", myWordDoc
     
     Application.StatusBar = MSG("MSG_DONE_ALL")
     
-ErrHandler:
+errHandler:
     If HasWordError Then
         Err.Clear
         MsgBox MSG("MSG_WORD_NOT_CLOSE"), vbCritical
@@ -314,11 +324,11 @@ ErrHandler:
 End Sub
 
 Private Sub SaveFile(FileName, DocObj As Object)
-    On Error GoTo ErrHandler
+    On Error GoTo errHandler
     DocObj.Paragraphs(1).Range.Delete
     If Dir(FileName) <> "" Then Kill FileName
     DocObj.SaveAs FileName
-ErrHandler:
+errHandler:
     If Err.Number <> 0 Then
         MsgBox MSG("MSG_SAVE_FALSE"), vbCritical
     End If
@@ -369,6 +379,8 @@ Private Sub InsertTable(DocObj As Object, RangeName As String)
     If UseHeader Then Set CopyRange = CopyRange.Resize(CopyRange.Rows.Count + 1).Offset(-1)
     CopyRange.Copy
     tmpSheet.Range("B1").PasteSpecial xlPasteAll
+    Application.CutCopyMode = False
+
     
     ' Now change column size
     For i = 1 To CopyRange.Columns.Count
@@ -481,9 +493,9 @@ Private Sub ReformatWordTable(WrdDoc As Object)
 End Sub
 
 Private Function CountTable(Obj As Object) As Long
-    On Error GoTo ErrHandler
+    On Error GoTo errHandler
     CountTable = Obj.Tables.Count
-ErrHandler:
+errHandler:
 End Function
 
 Private Function GetFilteredData(iFilter As String, iColumn As String) As String
@@ -540,12 +552,10 @@ Private Sub AppInit()
 End Sub
 
 Sub ActivateData()
-Attribute ActivateData.VB_ProcData.VB_Invoke_Func = " \n14"
     Sheets("Data").Activate
 End Sub
 
 Sub ActivateMain()
-Attribute ActivateMain.VB_ProcData.VB_Invoke_Func = " \n14"
     Sheets("Main").Activate
 End Sub
 
@@ -560,9 +570,11 @@ Sub UpdateII2B()
     'Copy formular
     CellLast.Copy
     TheRange.Offset(, 5).PasteSpecial xlPasteFormulas
+    Application.CutCopyMode = False
     Set CellLast = CellLast.Offset(, 2)
     CellLast.Copy
     TheRange.Offset(, 7).PasteSpecial xlPasteFormulas
+    Application.CutCopyMode = False
     Set CellLast = CellLast.Offset(, 2)
     CellLast.Copy
     TheRange.Offset(, 9).PasteSpecial xlPasteFormulas
@@ -580,6 +592,7 @@ Private Sub Repair_II5A(Optional SheetName As String)
         .Activate
         .Range("A6").Select
     End With
+    Application.CutCopyMode = False
     ' Reprotect sheet
     XProtectSheet ThisWorkbook.Sheets(SheetName)
 End Sub
@@ -592,23 +605,28 @@ Private Sub Repair_II5B()
         .Range("J7").Copy
         ' paste formular
         .Range("tblDataSumCol").PasteSpecial Paste:=xlPasteFormulas, Operation:=xlNone
+        Application.CutCopyMode = False
         .Range("B556:S556").Copy
         ' paste format
         .Range("tblUnicode_2").PasteSpecial Paste:=xlPasteFormats, Operation:=xlNone
+        Application.CutCopyMode = False
+        .Range("tblUnicode_2").PasteSpecial xlPasteValidation, Operation:=xlNone
+        Application.CutCopyMode = False
+        
         ' now paste validation
-        Dim VldRangeSrc As Range, VldRangeDst As Range, i As Long
-        Set VldRangeSrc = .Range("S556")
-        Set VldRangeDst = .Range("S7:S555")
-        For i = 1 To 14
-            If i <= 11 Then
-                VldRangeSrc.Copy
-                VldRangeDst.PasteSpecial xlPasteValidation, xlPasteSpecialOperationNone
-            Else
-                VldRangeDst.Validation.Delete
-            End If
-            Set VldRangeSrc = VldRangeSrc.Offset(, -1)
-            Set VldRangeDst = VldRangeDst.Offset(, -1)
-        Next
+        'Dim VldRangeSrc As Range, VldRangeDst As Range, i As Long
+        'Set VldRangeSrc = .Range("S556")
+        'Set VldRangeDst = .Range("S7:S555")
+        'For i = 1 To 14
+        '    If i <= 11 Then
+        '        VldRangeSrc.Copy
+        '        VldRangeDst.PasteSpecial xlPasteValidation, xlPasteSpecialOperationNone
+        '    Else
+        '        VldRangeDst.Validation.Delete
+        '    End If
+        '    Set VldRangeSrc = VldRangeSrc.Offset(, -1)
+        '    Set VldRangeDst = VldRangeDst.Offset(, -1)
+        'Next
         .Activate
         .Range("C7").Select
     End With
@@ -619,7 +637,6 @@ Private Sub Repair_II5B()
 End Sub
 
 Sub RepairSheet(Optional SheetObj As String = "")
-Attribute RepairSheet.VB_ProcData.VB_Invoke_Func = " \n14"
     ' This procedure shall repare all sheet.
     ShowOff
     If SheetObj = "" Then
@@ -644,7 +661,6 @@ Attribute RepairSheet.VB_ProcData.VB_Invoke_Func = " \n14"
 End Sub
 
 Sub ApplySheetFilter()
-Attribute ApplySheetFilter.VB_ProcData.VB_Invoke_Func = " \n14"
     'Activate filter on selected sheets
     ApplyFilter ThisWorkbook.Sheets("II.6.A"), "A7", 3, "<>"
     ApplyFilter ThisWorkbook.Sheets("II.6.B"), "A7", 3, "<>"
@@ -690,7 +706,6 @@ ExitSub:
 End Sub
 
 Sub ReleaseSheetFilter()
-Attribute ReleaseSheetFilter.VB_ProcData.VB_Invoke_Func = " \n14"
     ShowAll ThisWorkbook.Sheets("II.5.A")
     ShowAll ThisWorkbook.Sheets("II.5.B")
     ShowAll ThisWorkbook.Sheets("II.6.A")
@@ -728,11 +743,13 @@ Sub ShowOff(Optional TurnEventOn As Boolean = False)
 End Sub
 
 Sub MergeData(Optional SuccessFullCall As Boolean = False)
-Attribute MergeData.VB_ProcData.VB_Invoke_Func = " \n14"
     ' This procedure shall help merging data from various table into this.
     ' By doing this, the application shall ask user from verifying some key question to make sure that they will not
     ' try to duplicate the import
-    'MsgBox MSG("MSG_IMPORT_LIMITED"), vbInformation
+    MsgBox MSG("MSG_IMPORT_LIMITED"), vbInformation
+    'MSG_IMPORT_DISABLE
+
+    Exit Sub
     '-----------------------------------------------------------------------
     
     ShowOff
@@ -969,18 +986,18 @@ End Sub
 
 Private Function RangeValid(RangeName As String, shtObj As Worksheet) As Boolean
     Dim txtRange As Range
-    On Error GoTo ErrHandler
+    On Error GoTo errHandler
     Set txtRange = shtObj.Range(RangeName)
     RangeValid = True
-ErrHandler:
+errHandler:
 End Function
 
 Function SheetValid(SheetName As String, WrbObj As Workbook) As Boolean
     Dim txtRange As Worksheet
-    On Error GoTo ErrHandler
+    On Error GoTo errHandler
     Set txtRange = WrbObj.Sheets(SheetName)
     SheetValid = True
-ErrHandler:
+errHandler:
 End Function
 
 Sub ModifyColumns(Optional NumberOfCols As Long = 1)
@@ -1037,8 +1054,10 @@ Private Sub CreateFomular()
     With CurrentWorksheet
         Set rngStart = .Range("RNG_IIAST").Offset(0, 4)
         Set rngEnd = .Range("RNG_II2A")
+        ' already inserted columns... so this failed
         Set rngLastCell = .Range("dta_bsc_vil").Cells(.Range("dta_bsc_vil").Rows.Count, 1).Offset(0, -1)
         Set rngTotal = .Range(rngStart.Offset(1), rngLastCell)
+        
         ' Now that create total fomular
         ' + Create total column
         rngTotal.Formula = "=SUM(INDIRECT(""RC[1]" & ":RC[" & rngEnd.Column - rngStart.Column & "]"",FALSE))"
@@ -1094,11 +1113,11 @@ End Sub
 
 Function GetOpenWorkbook(FilePath As String) As Workbook
     'Open a workbook
-    On Error GoTo ErrHandler
+    On Error GoTo errHandler
     Dim WrkBook As Workbook
     Set WrkBook = Application.Workbooks.Open(FilePath, False, True)
     Set GetOpenWorkbook = WrkBook
-ErrHandler:
+errHandler:
     Set WrkBook = Nothing
 End Function
 
@@ -1125,30 +1144,11 @@ Sub ListName()
     Set wrk = Nothing
 End Sub
 
-'===============NOTE for variable type======================
-' For CachedListDistinct
-' The first item is alway the distintive list of searched column
-' Followed items shall have a format of COL:[Column order]/[Value of the column in string ", "]
-' For CachedListFreqency - keeps frequency of object occurence
-' Any item shall coded FREQ:[Column order]/COLVALUE:[VALUE]....
-' For example: [TYPE::]Bão[FREQ::]3/SEP/COL:[Nam]::2011, 2012/COL:[Column number for Thôn]::Thôn1, Thôn 2/COL ...till the ending column
-' /SEP/ is the delimiter for avoiding user wrong entry
-' The search for next columns will obmit the key column
-' This will help later querying with ease
-' We will use a fixed principle that keycolumn will alway regulate how data will be presented
-' So later I will just call GetDistintiveList("tblUnicode_3",2,COLUMN2)
-' Next, how repetive listing will work?
-' As it would require some entry data (i.e explanation, how would this associate?)
-' Syntax for the function is
-' [GetDistintiveList("tblUnicode_3",2,COL:1)
-'
-' There will be varying option such as:
-' List intro1 then move to next or
-' Function then will take the Array(Column). We will have to set the column in right order for better usage later
-
 Function GetDistintiveList(TableName As String, KeyColumn As Long, ColumData As Long, Optional UseListOnly As Boolean = True) As String
     ' Check whether a temporary variable is valid
-    If IsCollection(CachedListDistinct) Then GoTo SetFuncValue
+    On Error GoTo errHandler
+    If IsCollection(CachedListDistinct) And OldTableName = TableName Then GoTo SetFuncValue
+    OldTableName = TableName
     ' Now built the list, the sortable has been done before so we don't care
     Dim TheRange As Range, theCell As Range, StrCount As Long, SpStr As String
     
@@ -1188,7 +1188,13 @@ Function GetDistintiveList(TableName As String, KeyColumn As Long, ColumData As 
                 End If
                 If InStr(txtDistinct(i - 1), SpStr & theCell.Offset(0, i - 1) & SpStr) = 0 Then
                     txtDistinct(i - 1) = txtDistinct(i - 1) & ", " & SpStr & theCell.Offset(0, i - 1) & SpStr
-                    If i = KeyColumn Then StrCount = 1
+                    If i = KeyColumn Then
+                        StrCount = 1
+                        If MaxPos < StrCount Then
+                            MaxPos = StrCount
+                            MaxStr = theCell.Offset(0, KeyColumn - 1)
+                        End If
+                    End If
                 Else
                     ' Find Max freq for key column
                     If i = KeyColumn Then
@@ -1229,23 +1235,29 @@ SetFuncValue:
     Else
         GetDistintiveList = CachedListDistinct(ColumData)
     End If
+errHandler:
+    If Err.Number <> 0 Then Debug.Print Err.description & "CurrentPointer=[" & CurrentPointer & "]"
 End Function
 
 Sub TestAccessFormD()
     Set CachedListDistinct = Nothing
     ReDim ColListing(0)
-    SortTable ThisWorkbook, "II.5.C", "tblUnicode_3", "C6", "A6"
-    Debug.Print GetDistintiveList("tblUnicode_3", 3, 1)
+    SortTable ThisWorkbook, "II.5.D", "tblUnicode_4", "C6", "A6"
+    'CurrentPointer = 0
+    'Debug.Print GetDistintiveList("tblUnicode_4", 2, 2) & "//" & GetDistintiveList("tblUnicode_4", 2, 1) & "//" & GetDistintiveList("tblUnicode_4", 2, 6)
+    For CurrentPointer = 0 To UBound(ColListing)
+        Debug.Print GetDistintiveList("tblUnicode_4", 2, 2)
+    Next
 End Sub
 
 Function GetOption(TxtIn As String) As ObjectEquation()
     ' This will read the parametter and convert into an array for later processing
     Dim MyObj() As ObjectEquation, i As Long, ArrItem As Variant
-    Dim MyArr As Variant
-    MyArr = Split(TxtIn, "/")
-    ReDim MyObj(UBound(MyArr))
-    For i = LBound(MyArr) To UBound(MyArr)
-        ArrItem = Split(MyArr(i), "=")
+    Dim myArr As Variant
+    myArr = Split(TxtIn, "/")
+    ReDim MyObj(UBound(myArr))
+    For i = LBound(myArr) To UBound(myArr)
+        ArrItem = Split(myArr(i), "=")
         With MyObj(i)
             .VariableName = ArrItem(0)
             .VariableFomular = Evaluate(ArrItem(1))
@@ -1292,32 +1304,22 @@ Function CountMaxRepetition(RangeName As String, CountColumn As Long, _
     End Select
 End Function
 
-Function CountDistinct(RangeName As String, CountColumn As Long, Optional CountOnly As Long = 1) As Variant
-    'This function will count distinctively te specified number
-    Dim TheRange As Range, theCell As Range, RetObj As TextObject
-    Dim StrTxt As String, StrCount As Long, FinalString As String
-    Set TheRange = ThisWorkbook.Names(RangeName).RefersToRange.Offset(0, CountColumn - 1).Resize(, 1)
-    ' Turn the range to an array for quick access
-    Set theCell = TheRange.Cells(1)
-    While theCell <> ""
-        If StrTxt <> theCell Then
-            StrTxt = theCell
-            FinalString = FinalString & ", " & StrTxt
-            StrCount = StrCount + 1
-        End If
-        Set theCell = theCell.Offset(1)
-    Wend
-    'On Error Resume Next
-    If CountOnly = 1 Then
-        CountDistinct = StrCount
-    Else
-        CountDistinct = Mid(FinalString, 3)
-    End If
+Private Function GetAverage(inputText As String) As String
+    On Error GoTo errHandler
+    Dim i As Long, theText As String, myArr As Variant, theTotal As Double
+    theText = Replace(Replace(Replace(inputText, "(", ""), ")", ""), " ", "")
+    myArr = Split(theText, ",")
+    For i = LBound(myArr) To UBound(myArr)
+        theTotal = theTotal + CDbl(myArr(i))
+    Next
+    theTotal = theTotal / i
+    GetAverage = theTotal
+errHandler:
 End Function
 
 Function IsCollection(inCol As Object) As Boolean
     ' Check whether an object is a collection or not
-    On Error GoTo ErrHandler
+    On Error GoTo errHandler
     IsCollection = IIf(inCol.Count > 0, True, False)
-ErrHandler:
+errHandler:
 End Function
