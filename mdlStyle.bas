@@ -1,7 +1,6 @@
 Option Explicit
 
 Function GenerateWordStyle(theDocument As Object, WordObj As Object) As Boolean
-Attribute GenerateWordStyle.VB_ProcData.VB_Invoke_Func = " \n14"
     ' Sets up built-in numbered list styles and List Template
     ' including restart paragraph style
     ' Run in document template during design
@@ -274,7 +273,7 @@ Format:
         .Sections(1).Footers(1).PageNumbers.Add PageNumberAlignment:=wdAlignPageNumberCenter, FirstPage:=True
     End With
     Exit Function
-ErrHandler:
+errHandler:
     WordObj.Quit
     GenerateWordStyle = True
 End Function
@@ -307,9 +306,9 @@ End Sub
 
 Private Function StyleExist(DocObj As Object, StlName As String) As Boolean
     Dim MyStl As Object, StlObjName As String
-    On Error GoTo ErrHandler
+    On Error GoTo errHandler
     Set MyStl = DocObj.Styles(StlName)
     StlObjName = MyStl.NameLocal
     StyleExist = True
-ErrHandler:
+errHandler:
 End Function
