@@ -29,7 +29,6 @@ Private ActOverriden As Boolean        ' Tell whether later conversion should ov
 '---------------------------------------------
 
 Sub ConvertRange(CnvRange As Range)
-Attribute ConvertRange.VB_ProcData.VB_Invoke_Func = " \n14"
     ' This procedure will help converting current selected range to Unicode
     Dim txtRet As String        'Keeping converted value
     Dim SetObjFont As Boolean     'Marking whether error occured or not
@@ -219,7 +218,7 @@ Private Function IsFontValid(OldFont As String, NewFont As String, CurrentCellOb
     ' This function will help clearing out all problem with font issue
     Dim tFont As String
     
-    On Error GoTo ErrHandler
+    On Error GoTo errHandler
     'tFont = "[" & LCase(CurrentCellObj.Font.Name) & "]" - old method
     tFont = "[" & CurrentCellObj.Font.Name & "]"
     NewFont = ""
@@ -229,7 +228,7 @@ Private Function IsFontValid(OldFont As String, NewFont As String, CurrentCellOb
     If InStr(OldFont, tFont) <= 0 Then
         NewFont = CurrentCellObj.Font.Name
     End If
-ErrHandler:
+errHandler:
 End Function
 
 Private Sub GetFontAddUp(MyCode As CodeTable, FontPrefix As String, FontSuffix As String)
@@ -305,7 +304,6 @@ Private Sub InitSource(Optional isAutoCodeDetection As Boolean = False)
 End Sub
 
 Function GetVowelList(ByVal mCond As String, MultiChar As Boolean) As CodeTable
-Attribute GetVowelList.VB_ProcData.VB_Invoke_Func = " \n14"
     ' This part is for returning the vowels of a specific code page
     MultiChar = False
     ' Detect whether the code is multichar or single char
@@ -404,7 +402,6 @@ End Function
 
 ' Conversion stuff
 Function GetSourceCodeTable(Optional intFontName As String = "") As CodeTable
-Attribute GetSourceCodeTable.VB_ProcData.VB_Invoke_Func = " \n14"
     ' This function will try to get the equipvalent codetable from the built font code
     ' anyway - there no efficient way to get this dont precisely - I try to make
     ' the best matched font to convert
