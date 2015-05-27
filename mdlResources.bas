@@ -24,17 +24,15 @@ Public Type CodeTable
 End Type
 
 Function isArray(arrObj As Variant) As Boolean
-Attribute isArray.VB_ProcData.VB_Invoke_Func = " \n14"
     ' Check if a variant is an array or not
-    On Error GoTo ErrHandler
+    On Error GoTo errHandler
     Dim myExt As Long
     myExt = Val(arrObj(0))
     isArray = True
-ErrHandler:
+errHandler:
 End Function
 
 Function GetUnicodeString() As String
-Attribute GetUnicodeString.VB_ProcData.VB_Invoke_Func = " \n14"
     ' This function is no longer kept but I still would like it to be here for some folks if they want to diggest
     Dim iUnicode As Variant ' array to keep unicode char set
     Dim i As Long, iStr As String
@@ -53,14 +51,12 @@ Attribute GetUnicodeString.VB_ProcData.VB_Invoke_Func = " \n14"
 End Function
 
 Function SupportCodes() As Variant
-Attribute SupportCodes.VB_ProcData.VB_Invoke_Func = " \n14"
     Dim iCodeArr As Variant
     iCodeArr = Array("Unicode", "TCVN-ABC", "VNI")
     SupportCodes = iCodeArr
 End Function
 
 Function GetCodetable(iCodeName As Variant) As CodeTable
-Attribute GetCodetable.VB_ProcData.VB_Invoke_Func = " \n14"
     Dim iCode As CodeTable
     With iCode
         Select Case iCodeName
