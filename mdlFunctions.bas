@@ -1,116 +1,5 @@
 Option Explicit
  
-' Import
-#If VBA7 Then
-    Private Declare PtrSafe Function GetCurrentThreadId Lib "kernel32" () As LongPtr
-    Private Declare PtrSafe Function SetDlgItemText Lib "user32" Alias "SetDlgItemTextW" (ByVal hDlg As LongPtr, ByVal nIDDlgItem As LongPtr, ByVal lpString As String) As LongPtr
-    Private Declare PtrSafe Function SetWindowsHookEx Lib "user32" Alias "SetWindowsHookExA" (ByVal idHook As LongPtr, ByVal lpfn As LongPtr, ByVal hmod As LongPtr, ByVal dwThreadId As LongPtr) As LongPtr
-    Private Declare PtrSafe Function UnhookWindowsHookEx Lib "user32" (ByVal hHook As LongPtr) As LongPtr
-#Else
-    Private Declare Function GetCurrentThreadId Lib "kernel32" () As Long
-    Private Declare Function SetDlgItemText Lib "user32" Alias "SetDlgItemTextW" (ByVal hDlg As Long, ByVal nIDDlgItem As Long, ByVal lpString As String) As Long
-    Private Declare Function SetWindowsHookEx Lib "user32" Alias "SetWindowsHookExA" (ByVal idHook As Long, ByVal lpfn As Long, ByVal hmod As Long, ByVal dwThreadId As Long) As Long
-    Private Declare Function UnhookWindowsHookEx Lib "user32" (ByVal hHook As Long) As Long
-#End If
-
-' Handle to the Hook procedure
-#If VBA7 Then
-    Private hHook As LongPtr
-#Else
-    Private hHook As Long
-#End If
-' Hook type
-Private Const WH_CBT = 5
-Private Const HCBT_ACTIVATE = 5
- 
-' Constants
-Public Const IDOK = 1
-Public Const IDCANCEL = 2
-Public Const IDABORT = 3
-Public Const IDRETRY = 4
-Public Const IDIGNORE = 5
-Public Const IDYES = 6
-Public Const IDNO = 7
-
-' Modify this code for English
-Private StrYes As String
-Private StrNo As String
-Private StrOK As String
-Private StrCancel As String
-
-Global Const VnDate = "dd/mm/yyyy"
-
-Function MsgBox(MessageTxt As String, Optional msgStyle As VbMsgBoxStyle) As VbMsgBoxResult
-    Beep
-    Dim iVal As VbMsgBoxStyle, msgBoxIcon As MsoAlertIconType, msgButton As MsoAlertButtonType
-    iVal = msgStyle
-    Select Case msgStyle
-    Case 20, 19, 17, 16: ' Critical case
-        iVal = iVal - 16
-        msgBoxIcon = msoAlertIconCritical
-    Case 36, 35, 33, 32: ' Question case
-        iVal = iVal - 32
-        msgBoxIcon = msoAlertIconQuery
-    Case 52, 51, 49, 48: ' Exclamation case
-        iVal = iVal - 48
-        msgBoxIcon = msoAlertIconWarning
-    Case 68, 67, 65, 64: ' Information case
-        iVal = iVal - 64
-        msgBoxIcon = msoAlertIconInfo
-    End Select
-  
-    Select Case iVal
-    Case 4:
-        msgButton = msoAlertButtonYesNo
-    Case 3:
-        msgButton = msoAlertButtonYesNoCancel
-    Case 1:
-        msgButton = msoAlertButtonOKCancel
-    Case 0:
-        msgButton = msoAlertButtonOK
-    End Select
-    ' Set Hook
-    hHook = SetWindowsHookEx(WH_CBT, AddressOf MsgBoxHookProc, 0, GetCurrentThreadId)
-    ' Display the messagebox
-    MsgBox = Application.Assistant.DoAlert(App_Title, MessageTxt, msgButton, msgBoxIcon, msoAlertDefaultFirst, msoAlertCancelDefault, True)
-End Function
- 
-Private Function MsgBoxHookProc(ByVal lMsg As Long, ByVal wParam As Long, ByVal lParam As Long) As Long
-    If lMsg = HCBT_ACTIVATE Then
-        StrYes = "&C" & ChrW(243)
-        StrNo = "&Kh" & ChrW(244) & "ng"
-        'StrOK = ChrW(272) & ChrW(7891) & "&ng " & ChrW(253)
-        StrOK = "Ch" & ChrW(7845) & "p nh" & ChrW(7853) & "&n"
-        StrCancel = "&H" & ChrW(7911) & "y"
-
-        SetDlgItemText wParam, IDYES, StrConv(StrYes, vbUnicode)
-        SetDlgItemText wParam, IDNO, StrConv(StrNo, vbUnicode)
-        SetDlgItemText wParam, IDCANCEL, StrConv(StrCancel, vbUnicode)
-        SetDlgItemText wParam, IDOK, StrConv(StrOK, vbUnicode)
-        ' Release the Hook
-        UnhookWindowsHookEx hHook
-    End If
-    MsgBoxHookProc = False
-End Function
-
-Function MSG(MsgName As String) As String
-    ' This function will return expected string for better userinterface
-    MSG = "False"
-    Dim MyCell As Range, FoundObj As Boolean
-    Set MyCell = ThisWorkbook.Sheets("Data").Range("MSG_ID_START").Offset(1)
-    While Not FoundObj
-        If Len(Trim(MyCell)) <= 0 Then
-            FoundObj = True
-        Else
-            If MyCell = MsgName Then
-                FoundObj = True
-                MSG = MyCell.Offset(, 1)
-            End If
-        End If
-        Set MyCell = MyCell.Offset(1)
-    Wend
-End Function
-
 Function FalseInput(CtrlName As Control) As Boolean
     Dim tData As String
     If CtrlName = "" Then Exit Function
@@ -129,12 +18,12 @@ Function InputDate(iDateStr As Variant) As Date
     ' input shall be converted back to serial date
     Dim iStr As String, iSpliter As Variant
     
-    On Error GoTo errHandler
+    On Error GoTo ErrHandler
     iSpliter = Split(iDateStr, "/")
-    If UBound(iSpliter) < 2 Then GoTo errHandler
+    If UBound(iSpliter) < 2 Then GoTo ErrHandler
     ' Now we have to see what locale we are now at
     InputDate = DateSerial(iSpliter(2), iSpliter(0), iSpliter(1))
-errHandler:
+ErrHandler:
 End Function
 
 '===================================================
@@ -201,9 +90,9 @@ Private Sub SetCaption(MyObj As Object, iCaption As String, Optional ControlTipS
 End Sub
 
 Private Function GetCaption(Obj As Object) As String
-    On Error GoTo errHandler
+    On Error GoTo ErrHandler
     GetCaption = Obj.Caption
-errHandler:
+ErrHandler:
 End Function
 
 Sub ToggleFilterKey()
